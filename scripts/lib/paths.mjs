@@ -17,8 +17,8 @@ export function projectsDir() {
 }
 
 // Claude Code encode le cwd en nom de dossier en remplaçant \ / : par '-'.
-//   C:\Users\mehdi\Desktop\engram  ->  C--Users-mehdi-Desktop-engram
-//   /home/user/proj                ->  -home-user-proj
+//   C:\Users\you\Desktop\engram  ->  C--Users-you-Desktop-engram
+//   /home/user/proj              ->  -home-user-proj
 export function encodeProjectPath(cwd) {
   return cwd.replace(/[\\/:]/g, '-');
 }

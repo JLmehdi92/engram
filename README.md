@@ -28,32 +28,39 @@ commande.
 
 ---
 
-## Installation en une ligne
+## Installation
 
-Engram est un **plugin Claude Code**. Installe-le globalement → il marche sur **n'importe quel
+Engram est un **plugin Claude Code**. Installe-le une fois → il marche sur **n'importe quel
 projet**, et écrit dans le `.engram/` du repo courant.
 
-Depuis un dépôt distant (GitHub) :
+### Recommandé — depuis GitHub (une ligne)
+
+Dans une session Claude Code :
 
 ```
-/plugin marketplace add <ton-org>/engram
+/plugin marketplace add JLmehdi92/engram
 /plugin install engram@engram
 ```
 
-Ou en local (le dossier de ce repo EST une marketplace) :
+### Pré-requis
+
+**Node.js** disponible dans le PATH (les scripts déterministes sont en Node, **zéro dépendance
+npm**). Claude Code tourne déjà sur Node, donc c'est en général déjà le cas.
+
+### Développement / install locale
+
+Si tu as cloné le dépôt, le dossier cloné **est** une marketplace locale :
 
 ```
-/plugin marketplace add C:\Users\mehdi\Desktop\engram
+git clone https://github.com/JLmehdi92/engram
+/plugin marketplace add ./engram        # chemin vers le dossier cloné
 /plugin install engram@engram
 ```
 
-Pré-requis : **Node.js** disponible dans le PATH (les petits scripts déterministes sont en Node,
-zéro dépendance npm). Claude Code tourne déjà sur Node, c'est en général le cas.
-
-Pour tester sans installer :
+Pour tester sans installer (recharge à chaud pendant le dev) :
 
 ```
-claude --plugin-dir C:\Users\mehdi\Desktop\engram
+claude --plugin-dir ./engram
 ```
 
 ---

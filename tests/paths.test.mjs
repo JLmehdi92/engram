@@ -4,8 +4,8 @@ import path from 'node:path';
 import { encodeProjectPath, engramDir } from '../scripts/lib/paths.mjs';
 
 test('encode un cwd Windows en nom de dossier projects', () => {
-  assert.equal(encodeProjectPath('C:\\Users\\mehdi\\Desktop\\engram'),
-    'C--Users-mehdi-Desktop-engram');
+  assert.equal(encodeProjectPath('C:\\Users\\you\\Desktop\\engram'),
+    'C--Users-you-Desktop-engram');
 });
 
 test('encode un cwd POSIX', () => {

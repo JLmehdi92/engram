@@ -4,6 +4,9 @@
   "description": "Mémoire de fin de session pour Claude Code (plugin).",
   "private": true,
   "type": "module",
+  "author": "JLmehdi92",
+  "homepage": "https://github.com/JLmehdi92/engram",
+  "repository": { "type": "git", "url": "https://github.com/JLmehdi92/engram.git" },
   "scripts": {
     "test": "node --test"
   },
