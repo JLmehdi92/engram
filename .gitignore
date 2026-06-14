@@ -1,0 +1,8 @@
+# La mémoire générée par Engram dans CE repo (démo) n'a pas à être versionnée.
+.engram/
+
+# Divers
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

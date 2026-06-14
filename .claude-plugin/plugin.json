@@ -1,0 +1,10 @@
+{
+  "name": "engram",
+  "description": "Mémoire de fin de session pour Claude Code : sauvegarde tout le contexte (code + chat + problèmes résolus) en Markdown Obsidian, et le recharge automatiquement. Filet anti auto-compact.",
+  "version": "0.1.0",
+  "author": { "name": "Engram" },
+  "license": "MIT",
+  "commands": "./commands",
+  "skills": "./skills",
+  "hooks": "./hooks/hooks.json"
+}

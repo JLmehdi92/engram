@@ -1,0 +1,14 @@
+{
+  "name": "engram",
+  "owner": { "name": "Engram" },
+  "metadata": {
+    "description": "Marketplace local pour le plugin Engram (mémoire de session Claude Code)."
+  },
+  "plugins": [
+    {
+      "name": "engram",
+      "source": "./",
+      "description": "Mémoire de fin de session : /engram-save capture tout, /engram-load recharge, hooks PreCompact/SessionStart/SessionEnd."
+    }
+  ]
+}
