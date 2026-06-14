@@ -2,11 +2,18 @@
 
 // Stopwords minimaux FR + EN (on reste léger pour ne pas écraser de vrais termes).
 const STOP = new Set([
+  // FR
   'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'et', 'ou', 'à', 'au', 'aux', 'en', 'dans',
-  'sur', 'pour', 'par', 'avec', 'sans', 'que', 'qui', 'quoi', 'dont', 'ce', 'ces', 'cet', 'cette',
-  'se', 'sa', 'son', 'ses', 'est', 'sont', 'être', 'fait', 'pas', 'ne', 'on', 'il', 'elle',
+  'sur', 'sous', 'pour', 'par', 'avec', 'sans', 'que', 'qui', 'quoi', 'dont', 'où', 'ce', 'ces',
+  'cet', 'cette', 'se', 'sa', 'son', 'ses', 'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'leur', 'leurs',
+  'notre', 'nos', 'votre', 'vos', 'est', 'sont', 'être', 'été', 'fait', 'faire', 'pas', 'ne', 'ni',
+  'on', 'il', 'elle', 'ils', 'elles', 'je', 'tu', 'nous', 'vous', 'me', 'te', 'lui', 'leur',
+  'comme', 'mais', 'donc', 'car', 'or', 'si', 'plus', 'moins', 'très', 'tout', 'tous', 'toute',
+  'toutes', 'cela', 'ça', 'y', 'aussi', 'alors', 'quand', 'déjà', 'entre', 'vers', 'chez',
+  // EN
   'the', 'a', 'an', 'of', 'to', 'in', 'on', 'for', 'and', 'or', 'is', 'are', 'be', 'it', 'this',
-  'that', 'with', 'as', 'at', 'by', 'from', 'we', 'you',
+  'that', 'with', 'as', 'at', 'by', 'from', 'we', 'you', 'i', 'he', 'she', 'they', 'was', 'were',
+  'but', 'not', 'no', 'so', 'if', 'then', 'than', 'when', 'where', 'which', 'into', 'out', 'up',
 ]);
 
 export function tokenize(text) {

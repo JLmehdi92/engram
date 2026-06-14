@@ -11,6 +11,11 @@ test('tokenize: minuscule, accents conservés, stopwords retirés', () => {
   assert.ok(!t.includes('la'));
 });
 
+test('tokenize: stopwords fréquents FR retirés (anti faux-positifs de rappel)', () => {
+  const t = tokenize('comme mais donc alors quand très plus anthropic');
+  assert.deepEqual(t, ['anthropic']);     // seul le terme signifiant survit
+});
+
 test('BM25: classe le doc le plus pertinent en premier', () => {
   const docs = [
     { id: 'a', text: 'le hook precompact bloque la compaction du contexte' },

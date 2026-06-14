@@ -13,7 +13,9 @@ const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 export function recall(items, query, opts = {}) {
   const {
     topK = 5, minScore = 0.0, budgetTokens = 4000,
-    weights = { recency: 1, importance: 1, relevance: 1 },
+    // La pertinence DOIT dominer : un item juste récent/utile mais hors-sujet ne
+    // doit pas coiffer une vraie correspondance. récence/importance = tiebreakers.
+    weights = { recency: 1, importance: 1, relevance: 3 },
     nowMs = 0, type = null, includeExpired = false,
     semantic = null, graphHops = 2, seedCount = 8,
   } = opts;
@@ -50,10 +52,11 @@ export function recall(items, query, opts = {}) {
   })));
 
   // ajustement leçons via compteurs helpful/harmful
+  // Ajustement leçons : léger tiebreaker borné (ne doit pas écraser la pertinence).
   const lessonAdjust = (id) => {
     const it = byId.get(id);
     if (it.type !== 'lesson') return 1;
-    return clamp((1 + (it.helpful || 0)) / (1 + (it.harmful || 0)), 0.3, 3);
+    return clamp((1 + (it.helpful || 0)) / (1 + (it.harmful || 0)), 0.5, 1.5);
   };
 
   const scored = combine(candidates, { relevance, importance, recency }, weights, lessonAdjust);

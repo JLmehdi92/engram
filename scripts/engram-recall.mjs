@@ -44,7 +44,7 @@ const results = recall(items, query, {
   topK: Number(flag('--topk', rc.topK ?? 5)),
   minScore: rc.minScore ?? 0,
   budgetTokens: rc.budgetTokens ?? 4000,
-  weights: rc.weights || { recency: 1, importance: 1, relevance: 1 },
+  weights: rc.weights,
   nowMs: Date.now(),
   type: flag('--type', null) || null,
   semantic,
