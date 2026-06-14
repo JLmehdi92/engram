@@ -155,6 +155,17 @@ Toutes les notes ont un frontmatter YAML (`title`, `type`, `updated`, `source_co
 
 ---
 
+## Tests
+
+Suite de tests des libs déterministes (redaction, gitignore, frontmatter, transcript, budget
+mémoire, chemins), **sans dépendance** (runner intégré de Node) :
+
+```
+npm test          # ou : node --test
+```
+
+27 tests, tous verts.
+
 ## Architecture interne
 
 L'**intelligence** (résumés, structuration, extraction des leçons) est faite par **Claude** via les

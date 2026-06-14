@@ -4,9 +4,10 @@
 const RULES = [
   // Blocs de clé privée PEM (multilignes).
   { type: 'private-key', re: /-----BEGIN[ A-Z]*PRIVATE KEY-----[\s\S]*?-----END[ A-Z]*PRIVATE KEY-----/g },
-  // Clés API connues par préfixe.
-  { type: 'openai-key', re: /\bsk-[A-Za-z0-9_-]{16,}\b/g },
+  // Clés API connues par préfixe. NB : la règle Anthropic (sk-ant-…) doit passer
+  // AVANT la règle OpenAI générique (sk-…) qui sinon l'avalerait.
   { type: 'anthropic-key', re: /\bsk-ant-[A-Za-z0-9_-]{16,}\b/g },
+  { type: 'openai-key', re: /\bsk-(?!ant-)[A-Za-z0-9_-]{16,}\b/g },
   { type: 'github-token', re: /\b(?:ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9_]{16,}\b/g },
   { type: 'aws-access-key', re: /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g },
   { type: 'google-key', re: /\bAIza[A-Za-z0-9_-]{20,}\b/g },
