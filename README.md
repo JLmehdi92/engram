@@ -1,6 +1,21 @@
 # 🧠 Engram — mémoire de fin de session pour Claude Code
 
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Node](https://img.shields.io/badge/Node-%E2%89%A518-blue.svg)
+![Tests](https://img.shields.io/badge/tests-27%20passing-brightgreen.svg)
+![deps](https://img.shields.io/badge/dependencies-0-success.svg)
+
 > Un *engram* est la trace physique d'un souvenir dans le cerveau.
+
+**Installation en une ligne** (dans une session Claude Code) :
+
+```
+/plugin marketplace add JLmehdi92/engram
+/plugin install engram@engram
+```
+
+Puis : tu codes normalement → à la fin tu lances `/engram-save` → la mémoire revient toute seule à
+la session suivante (et après chaque auto-compact). [Démarrage rapide ↓](#installation-en-une-ligne)
 
 Engram sauvegarde **tout le contexte d'une session Claude Code** — le code du projet, le déroulé de
 la session (ce qui a été fait + le chat), et les problèmes rencontrés avec leurs solutions — dans
