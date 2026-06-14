@@ -2,7 +2,7 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![Node](https://img.shields.io/badge/Node-%E2%89%A518-blue.svg)
-![Tests](https://img.shields.io/badge/tests-65%20passing-brightgreen.svg)
+[![tests](https://github.com/JLmehdi92/engram/actions/workflows/ci.yml/badge.svg)](https://github.com/JLmehdi92/engram/actions/workflows/ci.yml)
 ![deps](https://img.shields.io/badge/dependencies-0-success.svg)
 ![local](https://img.shields.io/badge/100%25-local-blueviolet.svg)
 
