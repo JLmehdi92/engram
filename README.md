@@ -137,6 +137,17 @@ ne sort de la machine.
 ```
 Tous les champs ont des défauts ; le fichier est facultatif.
 
+### Config globale (tous tes projets)
+
+Pour régler une fois pour **tous tes projets** (ex. si ton compte a un contexte 1M), crée
+`~/.claude/engram.config.json` :
+```json
+{ "capture": { "contextWindow": 1000000 } }
+```
+Ordre de priorité : défauts < `~/.claude/engram.config.json` (global) < `.engram/config.json`
+(projet). Le défaut `contextWindow` (200000) convient à la plupart ; ne le change globalement que si
+ta fenêtre de contexte est plus grande (sinon l'alerte « contexte plein » se déclenche trop tôt).
+
 ---
 
 ## Tests

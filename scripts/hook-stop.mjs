@@ -27,7 +27,8 @@ if (tokens < threshold) process.exit(0);
 
 // Anti-spam : ne ré-avertit que si le contexte a notablement grossi depuis la dernière alerte.
 const sid = payload.session_id || 'unknown';
-const minReWarn = cap.minReWarnTokens || 15000;
+// Ré-avertit seulement après une croissance notable (≈10% de la fenêtre) → pas de spam.
+const minReWarn = cap.minReWarnTokens || Math.round(windowTokens * 0.1);
 const st = readTmpState(cwd);
 st.warns = st.warns || {};
 if (st.warns[sid] && tokens - st.warns[sid] < minReWarn) process.exit(0);
