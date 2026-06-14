@@ -1,6 +1,6 @@
 {
   "name": "engram",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Mémoire persistante pour Claude Code (plugin) : capture sans perte + rappel par pertinence + apprentissage des erreurs.",
   "private": true,
   "type": "module",

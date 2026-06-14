@@ -87,7 +87,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/mark-saved.mjs"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/engram-index.mjs"
 ```
 `mark-saved` enregistre le commit/horodatage + `.engram/.gitignore`. `engram-index` reconstruit
-l'index de rappel (BM25 + graphe + embeddings si Ollama), pour que `engram_recall`/`engram_lessons`
+l'index de rappel (BM25 + graphe), pour que `engram_recall`/`engram_lessons`
 et le SessionStart soient à jour.
 
 ## Rapport final

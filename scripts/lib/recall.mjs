@@ -1,6 +1,6 @@
 // recall.mjs — moteur de rappel : fusionne mots-clés (BM25) + graphe (wikilinks)
-// + scoring (récence/importance/pertinence). Le rappel sémantique (embeddings) est
-// injecté en option via opts.semantic (Phase 2) sans changer cette logique.
+// + scoring (récence/importance/pertinence). opts.semantic accepte des rangs externes
+// optionnels (générique), mais le rappel marche entièrement en BM25 + graphe.
 import { buildBM25, searchBM25 } from './textsearch.mjs';
 import { buildGraph, expand } from './graph.mjs';
 import { recencyScore, normalize, rrf, combine } from './scoring.mjs';

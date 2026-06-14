@@ -37,7 +37,7 @@ const marker = '# --- géré par Engram ---';
 const sessionsRule = cfg.gitignoreSessions
   ? 'sessions/\n!sessions/INDEX.md\n'   // on garde l'index, on ignore les logs datés
   : '';
-// .index/ est reconstructible (BM25/embeddings) -> jamais versionné.
+// .index/ est reconstructible (BM25 + graphe) -> jamais versionné.
 const block = `${marker}\n.state.json\n.index/\n${sessionsRule}# --- fin Engram ---\n`;
 
 let current = exists(giPath) ? fs.readFileSync(giPath, 'utf8') : '';

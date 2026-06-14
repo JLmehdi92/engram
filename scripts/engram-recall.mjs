@@ -7,7 +7,6 @@ import { loadConfig } from './lib/config.mjs';
 import { engramDir, exists } from './lib/paths.mjs';
 import { loadItems } from './lib/notes.mjs';
 import { recall } from './lib/recall.mjs';
-import { maybeSemanticRanks } from './lib/embeddings.mjs';
 
 const cwd = process.cwd();
 const cfg = loadConfig(cwd);
@@ -38,7 +37,6 @@ if (exists(itemsFile)) {
 if (!items.length) items = loadItems(dir);
 
 const rc = cfg.recall || {};
-const semantic = await maybeSemanticRanks(cfg, dir, items, query).catch(() => null);
 
 const results = recall(items, query, {
   topK: Number(flag('--topk', rc.topK ?? 5)),
@@ -47,7 +45,6 @@ const results = recall(items, query, {
   weights: rc.weights,
   nowMs: Date.now(),
   type: flag('--type', null) || null,
-  semantic,
 });
 
 if (asJson) {

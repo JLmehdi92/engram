@@ -2,7 +2,7 @@
 // mcp-server.mjs — serveur MCP (Model Context Protocol) pour Engram.
 // JSON-RPC 2.0 sur stdio, messages délimités par des sauts de ligne. Zéro dépendance.
 // Expose à Claude des outils pour interroger/écrire la mémoire EN PLEIN TRAVAIL :
-//   - engram_recall(query, topK?, type?)  : rappel hybride
+//   - engram_recall(query, topK?, type?)  : rappel (BM25 + graphe)
 //   - engram_lessons(situation)           : leçons pertinentes (apprentissage des erreurs)
 //   - engram_save_note(title, content, type?) : ajoute une note durable
 import fs from 'node:fs';
@@ -11,9 +11,8 @@ import { loadConfig } from './lib/config.mjs';
 import { engramDir, exists, ensureDir } from './lib/paths.mjs';
 import { loadItems } from './lib/notes.mjs';
 import { recall } from './lib/recall.mjs';
-import { maybeSemanticRanks } from './lib/embeddings.mjs';
 
-const SERVER = { name: 'engram', version: '0.2.0' };
+const SERVER = { name: 'engram', version: '0.3.0' };
 const cwd = process.env.ENGRAM_CWD || process.cwd();
 
 function cfgDir() {
@@ -24,7 +23,7 @@ function cfgDir() {
 const TOOLS = [
   {
     name: 'engram_recall',
-    description: 'Rappelle de la mémoire Engram les notes/leçons/sessions les plus pertinentes pour une requête (rappel hybride mots-clés + graphe + sémantique). À utiliser pour retrouver le contexte d\'un projet, une décision passée, où on en était.',
+    description: 'Rappelle de la mémoire Engram les notes/leçons/sessions les plus pertinentes pour une requête (rappel mots-clés BM25 + graphe wikilinks). À utiliser pour retrouver le contexte d\'un projet, une décision passée, où on en était.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -84,11 +83,10 @@ async function doRecall(query, { topK, type } = {}) {
   if (!exists(dir)) return 'Aucune mémoire Engram pour ce projet (.engram absent). Lance /engram-save.';
   const items = await getItems(dir);
   const rc = cfg.recall || {};
-  const semantic = await maybeSemanticRanks(cfg, dir, items, query).catch(() => null);
   const results = recall(items, query, {
     topK: topK || rc.topK || 5, minScore: rc.minScore ?? 0,
     budgetTokens: rc.budgetTokens ?? 4000, weights: rc.weights, nowMs: Date.now(),
-    type: type || null, semantic,
+    type: type || null,
   });
   return fmtResults(results);
 }

@@ -20,7 +20,9 @@ if (!tp) process.exit(0);
 const tokens = lastContextTokens(tp);
 if (!tokens) process.exit(0);
 
-const windowTokens = cap.contextWindow || 200000;
+// Défaut 1M : les Opus récents (4.6/4.7/4.8) ont une fenêtre 1M. Pour un modèle plus
+// petit, PreCompact reste le filet garanti. Surchargeable via config.
+const windowTokens = cap.contextWindow || 1000000;
 const pct = cap.contextThresholdPct || 70;
 const threshold = cap.contextThresholdTokens || Math.round(windowTokens * pct / 100);
 if (tokens < threshold) process.exit(0);

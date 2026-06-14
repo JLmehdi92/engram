@@ -62,7 +62,10 @@ perte + rappel par pertinence + état de reprise + apprentissage des erreurs**.
 - `scripts/engram-recall.mjs` — `recall(query, {topK, budget, type})` → items classés + extraits.
   Filtre `valid_to` (bi-temporel « now »), seuil, top-k, budget tokens.
 
-### 5.2 Embeddings optionnels (Ollama)
+### 5.2 Embeddings optionnels (Ollama) — RETIRÉ en v0.3
+> ⚠️ Cette section reflète le design initial. Les embeddings/Ollama ont été **retirés en v0.3** :
+> le rappel reste BM25 + graphe (100% local, zéro dépendance). Conservé ici pour l'historique.
+
 - `scripts/lib/embeddings.mjs` — détecte Ollama (`OLLAMA_HOST` ou `http://127.0.0.1:11434`),
   modèle par défaut `nomic-embed-text`. Embedde le « matching text » des items, cache dans
   `.index/embeddings.json` (clé = hash du texte → ne ré-embedde que ce qui change). Cosine.

@@ -21,7 +21,7 @@ function readJson(p) {
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return null; }
 }
 
-// Fusion profonde (les objets imbriqués comme capture/recall/embeddings se combinent).
+// Fusion profonde (les objets imbriqués comme capture/recall se combinent).
 export function deepMerge(base, over) {
   if (!over || typeof over !== 'object') return base;
   const out = Array.isArray(base) ? [...base] : { ...base };

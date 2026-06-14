@@ -1,7 +1,7 @@
 {
   "name": "engram",
-  "description": "Mémoire persistante pour Claude Code : capture sans perte (code + chat + erreurs résolues), rappel hybride par pertinence (BM25 + graphe + embeddings Ollama optionnels), serveur MCP (engram_recall/engram_lessons), état de reprise STATE.md, apprentissage des erreurs, consolidation. Filet anti auto-compact. 100% local.",
-  "version": "0.2.0",
+  "description": "Mémoire persistante pour Claude Code : capture sans perte (code + chat + erreurs résolues), rappel par pertinence (BM25 + graphe wikilinks), serveur MCP (engram_recall/engram_lessons), état de reprise STATE.md, apprentissage des erreurs, consolidation. Filet anti auto-compact. 100% local, zéro dépendance.",
+  "version": "0.3.0",
   "author": { "name": "JLmehdi92", "url": "https://github.com/JLmehdi92" },
   "homepage": "https://github.com/JLmehdi92/engram",
   "repository": "https://github.com/JLmehdi92/engram.git",

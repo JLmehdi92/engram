@@ -30,7 +30,7 @@ perte + rappel par pertinence + état de reprise + apprentissage des erreurs**.
 | Capacité | Comment |
 |---|---|
 | **Capture sans perte** | `/engram-save` + hooks (PreCompact, fin de session, **seuil de contexte ~70%**) |
-| **Rappel par pertinence** | hybride **BM25 + graphe `[[wikilinks]]` + embeddings** (Ollama, optionnel), scoré récence×importance×pertinence |
+| **Rappel par pertinence** | **BM25 (mots-clés) + graphe `[[wikilinks]]`**, scoré récence×importance×pertinence (RRF) |
 | **Mémoire interrogeable en plein travail** | serveur **MCP** : `engram_recall`, `engram_lessons`, `engram_save_note` |
 | **Reprise immédiate** | `STATE.md` (« où on en est ») chargé en premier à chaque session |
 | **Apprentissage des erreurs** | `lessons.md` v2 (`[L-xxx]` : trigger/symptom/root_cause/fix/rule), dédup, compteurs helpful/harmful, bi-temporel |
@@ -47,9 +47,9 @@ Agents, ACE — voir `docs/superpowers/specs/`).
 - **Étage 2 — archive cherchable (à la demande)** : toutes les notes/leçons/sessions, indexées et
   récupérées par **rappel scoré borné** (top-k, budget de tokens) — c'est ce qui évite le « context rot ».
 
-Le **rappel** fusionne (RRF) trois signaux : mots-clés (BM25), graphe des `[[wikilinks]]`, et
-sémantique (embeddings Ollama si présents). Score final =
-`α·récence(0.995^Δj) + β·importance + γ·pertinence`, filtré par fenêtre de validité (bi-temporel).
+Le **rappel** fusionne (RRF) deux signaux : mots-clés (BM25) et graphe des `[[wikilinks]]`. Score
+final = `α·récence(0.995^Δj) + β·importance + γ·pertinence`, filtré par fenêtre de validité
+(bi-temporel). Tout est local, déterministe, sans modèle ni dépendance.
 
 ---
 
@@ -89,20 +89,11 @@ Tu n'as **rien à lancer au début** : le rechargement est automatique (hook Ses
 ├── lessons.md          # erreurs résolues [L-xxx] (durable, scoré)
 ├── sessions/           # INDEX.md + AAAA-MM-JJ-*.md (non versionnés par défaut)
 ├── archive/            # retirés (jamais supprimés)
-├── .index/             # bm25/graphe/embeddings (reconstructible, gitignoré)
+├── .index/             # bm25/graphe (reconstructible, gitignoré)
 └── .state.json · config.json · .gitignore (gérés)
 ```
 
 Frontmatter YAML + `[[wikilinks]]` → ouvrable comme **vault Obsidian**.
-
----
-
-## Rappel sémantique (optionnel, 100% local)
-
-Sans rien installer, le rappel marche en **BM25 + graphe**. Si **[Ollama](https://ollama.com)** est
-présent (`ollama serve` + `ollama pull nomic-embed-text`), Engram **active automatiquement** la
-recherche sémantique (embeddings locaux) en plus — détecté tout seul, jamais requis, aucune donnée
-ne sort de la machine.
 
 ---
 
@@ -114,7 +105,7 @@ ne sort de la machine.
 - **Écriture par delta** des leçons (jamais de réécriture globale → pas de « context collapse »).
 - **Bi-temporel** : un fait contredit n'est pas supprimé (`superseded_by`/`valid_to`).
 - **Secrets masqués** dans la capture de session.
-- **65 tests** (`npm test`), **zéro dépendance** npm.
+- **62 tests** (`npm test`), **zéro dépendance** npm.
 
 ---
 
@@ -131,22 +122,21 @@ ne sort de la machine.
   "redactSecrets": true,
   "recall": { "topK": 5, "minScore": 0, "budgetTokens": 4000, "maxLessonsOnStart": 8,
               "weights": { "recency": 1, "importance": 1, "relevance": 3 } },
-  "embeddings": { "enabled": "auto", "host": "http://127.0.0.1:11434", "model": "nomic-embed-text" },
-  "capture": { "autoWarn": true, "contextWindow": 200000, "contextThresholdPct": 70 }
+  "capture": { "autoWarn": true, "contextWindow": 1000000, "contextThresholdPct": 70 }
 }
 ```
 Tous les champs ont des défauts ; le fichier est facultatif.
 
 ### Config globale (tous tes projets)
 
-Pour régler une fois pour **tous tes projets** (ex. si ton compte a un contexte 1M), crée
-`~/.claude/engram.config.json` :
+Pour régler une fois pour **tous tes projets**, crée `~/.claude/engram.config.json` :
 ```json
-{ "capture": { "contextWindow": 1000000 } }
+{ "capture": { "contextWindow": 200000 } }
 ```
 Ordre de priorité : défauts < `~/.claude/engram.config.json` (global) < `.engram/config.json`
-(projet). Le défaut `contextWindow` (200000) convient à la plupart ; ne le change globalement que si
-ta fenêtre de contexte est plus grande (sinon l'alerte « contexte plein » se déclenche trop tôt).
+(projet). Le défaut `contextWindow` est **1 000 000** (Opus 4.6/4.7/4.8 récents). Ne le baisse que si
+tu utilises un modèle à fenêtre plus petite (200k) — sinon l'alerte « contexte plein » se
+déclencherait trop tard. Dans tous les cas, le hook **PreCompact** reste le filet garanti.
 
 ---
 
@@ -155,16 +145,15 @@ ta fenêtre de contexte est plus grande (sinon l'alerte « contexte plein » se 
 ```
 npm test          # ou : node --test
 ```
-65 tests, zéro dépendance (runner intégré de Node) : tokenizer/BM25, graphe, scoring/RRF, recall,
-embeddings (mock), leçons (parse + delta), protocole MCP, consolidation, hook seuil, redaction,
+62 tests, zéro dépendance (runner intégré de Node) : tokenizer/BM25, graphe, scoring/RRF, recall,
+leçons (parse + delta), protocole MCP, consolidation, hook seuil, config en couches, redaction,
 budget mémoire, etc.
 
 ---
 
 ## Pré-requis & install locale
 
-Pré-requis : **Node.js** dans le PATH (Claude Code tourne déjà sur Node). Embeddings : **Ollama**
-optionnel.
+Pré-requis : **Node.js** dans le PATH (Claude Code tourne déjà sur Node). Aucune autre dépendance.
 
 Dev / install locale (dépôt cloné = marketplace locale) :
 ```
@@ -175,11 +164,11 @@ git clone https://github.com/JLmehdi92/engram
 ```
 
 ## Désinstaller
-`/plugin uninstall engram@engram`. Pour couper le sémantique : `embeddings.enabled: false`. Pour
-couper l'auto-load : `autoLoad: false`.
+`/plugin uninstall engram@engram`. Pour couper l'auto-load : `autoLoad: false`. Pour ne plus être
+averti à la saturation : `capture.autoWarn: false`.
 
 ## Architecture interne
 L'**intelligence** (résumés, structuration, extraction de leçons, scan) est faite par **Claude** via
 les slash-commands (sous-agents parallèles). Les **scripts Node** ne font que du déterministe
-(énumération, git, transcript, **index/rappel BM25+graphe**, embeddings, hooks, serveur MCP). Détails :
+(énumération, git, transcript, **index/rappel BM25+graphe**, hooks, serveur MCP). Détails :
 `docs/superpowers/specs/2026-06-14-engram-v2-design.md`.
