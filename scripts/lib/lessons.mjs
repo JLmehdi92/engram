@@ -78,3 +78,105 @@ export function nextLessonId(lessons) {
   }
   return `L-${String(max + 1).padStart(3, '0')}`;
 }
+
+// ---------------------------------------------------------------------------
+// Écriture par delta (jamais de réécriture globale du fichier).
+// ---------------------------------------------------------------------------
+
+const FIELD_ORDER = ['trigger', 'symptom', 'root_cause', 'fix', 'rule'];
+const META_ORDER = ['importance', 'helpful', 'harmful', 'status', 'created', 'last_used', 'refs', 'superseded_by', 'valid_to'];
+
+function renderMeta(meta = {}) {
+  const m = { importance: 6, helpful: 0, harmful: 0, status: 'active', ...meta };
+  const parts = [];
+  for (const k of META_ORDER) {
+    if (m[k] === undefined || m[k] === null) { if (['created', 'last_used'].includes(k)) parts.push(`${k}=`); continue; }
+    let v = m[k];
+    if (k === 'refs') v = `[${(Array.isArray(v) ? v : [v]).join(',')}]`;
+    parts.push(`${k}=${v}`);
+  }
+  return parts.join(' · ');
+}
+
+// Sérialise une leçon en bloc markdown.
+export function renderLesson(lesson) {
+  const lines = [`### [${lesson.id}] ${lesson.title || ''}`.trimEnd()];
+  for (const k of FIELD_ORDER) {
+    if (lesson.fields && lesson.fields[k] !== undefined && lesson.fields[k] !== '') {
+      lines.push(`- ${k}: ${lesson.fields[k]}`);
+    }
+  }
+  lines.push(`- meta: ${renderMeta(lesson.meta)}`);
+  return lines.join('\n');
+}
+
+// Localise [start,end[ du bloc d'une leçon par id dans le contenu, ou null.
+function blockRange(content, id) {
+  const re = new RegExp(`^###\\s*\\[${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]`, 'm');
+  const m = re.exec(content);
+  if (!m) return null;
+  const start = m.index;
+  const after = content.slice(start + m[0].length);
+  const nextRel = /^###\s*\[/m.exec(after);
+  const end = nextRel ? start + m[0].length + nextRel.index : content.length;
+  return [start, end];
+}
+
+// Squelette de fichier lessons.md si absent.
+export function lessonsScaffold(today) {
+  return `---\ntitle: Leçons & dépannage\ntype: lessons\nupdated: ${today}\n---\n\n`
+    + '# Leçons & dépannage\n\n'
+    + '> **Avant de proposer une solution à un problème, consulte ce fichier.**\n'
+    + '> Les leçons sont enregistrées APRÈS vérification que le correctif marche.\n\n';
+}
+
+// Ajoute une leçon (delta : append d'un bloc). Retourne { content, id }.
+export function addLesson(content, { title, fields, meta }, today) {
+  const lessons = parseLessons(content);
+  const id = nextLessonId(lessons);
+  const block = renderLesson({ id, title, fields, meta: { created: today, ...meta } });
+  const sep = content.endsWith('\n\n') ? '' : (content.endsWith('\n') ? '\n' : '\n\n');
+  return { content: content + sep + block + '\n', id };
+}
+
+// Applique une transformation fn(lesson) à un bloc existant (delta : remplace ce bloc).
+export function modifyLesson(content, id, fn) {
+  const range = blockRange(content, id);
+  if (!range) return content;
+  const [start, end] = range;
+  const slice = content.slice(start, end);
+  const parsed = parseLessons(slice)[0];
+  if (!parsed) return content;
+  fn(parsed);
+  const rendered = renderLesson(parsed);
+  const trailing = slice.endsWith('\n\n') ? '\n\n' : (slice.endsWith('\n') ? '\n' : '');
+  return content.slice(0, start) + rendered + trailing + content.slice(end);
+}
+
+// Incrémente un compteur (helpful/harmful) + met à jour last_used.
+export function bumpCounter(content, id, field, today, delta = 1) {
+  return modifyLesson(content, id, (l) => {
+    l.meta[field] = (Number(l.meta[field]) || 0) + delta;
+    if (today) l.meta.last_used = today;
+  });
+}
+
+// Marque une leçon comme remplacée (bi-temporel, non destructif).
+export function supersedeLesson(content, oldId, newId, today) {
+  return modifyLesson(content, oldId, (l) => {
+    l.meta.status = 'superseded';
+    l.meta.superseded_by = newId;
+    if (today) l.meta.valid_to = today;
+  });
+}
+
+// Trouve les leçons les plus proches d'un texte candidat (pour décider ADD/UPDATE/NOOP).
+export function findSimilarLessons(lessons, text, topN = 3) {
+  // import paresseux pour éviter un cycle.
+  return import('./textsearch.mjs').then(({ buildBM25, searchBM25 }) => {
+    const idx = buildBM25(lessons.map((l) => ({ id: l.id, text: lessonMatchText(l) })));
+    return searchBM25(idx, text).slice(0, topN)
+      .map((r) => ({ id: r.id, score: Number(r.score.toFixed(3)),
+        title: (lessons.find((l) => l.id === r.id) || {}).title }));
+  });
+}
