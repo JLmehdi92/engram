@@ -170,6 +170,17 @@ export function supersedeLesson(content, oldId, newId, today) {
   });
 }
 
+// Retire un bloc de leçon (pour l'archiver ailleurs). Retourne { content, removed }.
+export function removeLesson(content, id) {
+  const range = blockRange(content, id);
+  if (!range) return { content, removed: null };
+  const [start, end] = range;
+  const removed = content.slice(start, end).trim();
+  let c = content.slice(0, start) + content.slice(end);
+  c = c.replace(/\n{3,}/g, '\n\n');
+  return { content: c, removed };
+}
+
 // Trouve les leçons les plus proches d'un texte candidat (pour décider ADD/UPDATE/NOOP).
 export function findSimilarLessons(lessons, text, topN = 3) {
   // import paresseux pour éviter un cycle.

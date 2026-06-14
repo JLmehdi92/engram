@@ -9,6 +9,24 @@
 //  - tool_result revient comme une ligne 'user' avec content = [{type:'tool_result', ...}]
 import fs from 'node:fs';
 
+// Tokens de contexte du dernier message assistant (proxy de remplissage).
+// Lit depuis la fin pour rester rapide même sur un gros transcript.
+export function lastContextTokens(filePath) {
+  let raw;
+  try { raw = fs.readFileSync(filePath, 'utf8'); } catch { return null; }
+  const lines = raw.split(/\r?\n/);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const t = lines[i].trim();
+    if (!t) continue;
+    let o; try { o = JSON.parse(t); } catch { continue; }
+    if (o.type === 'assistant' && o.message && o.message.usage) {
+      const u = o.message.usage;
+      return (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
+    }
+  }
+  return null;
+}
+
 export function readTranscript(filePath) {
   const raw = fs.readFileSync(filePath, 'utf8');
   const out = [];
