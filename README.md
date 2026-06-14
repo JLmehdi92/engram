@@ -1,11 +1,20 @@
-# 🧠 Engram — mémoire de fin de session pour Claude Code
+# 🧠 Engram — la mémoire qui n'oublie jamais, pour Claude Code
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![Node](https://img.shields.io/badge/Node-%E2%89%A518-blue.svg)
-![Tests](https://img.shields.io/badge/tests-27%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-65%20passing-brightgreen.svg)
 ![deps](https://img.shields.io/badge/dependencies-0-success.svg)
+![local](https://img.shields.io/badge/100%25-local-blueviolet.svg)
 
 > Un *engram* est la trace physique d'un souvenir dans le cerveau.
+
+Engram donne à Claude Code une **mémoire persistante** : il **capture sans perte** le contexte d'un
+projet (code + déroulé des sessions + erreurs résolues), **retrouve par pertinence** le bon souvenir
+au bon moment, sait **toujours où tu t'es arrêté** (même après 3 mois), et **n'oublie plus ses
+erreurs** (il les réapplique pour se gérer seul). 100% local, zéro dépendance.
+
+La fenêtre de contexte étant finie, on ne « garde pas tout en tête » : on garantit **capture sans
+perte + rappel par pertinence + état de reprise + apprentissage des erreurs**.
 
 **Installation en une ligne** (dans une session Claude Code) :
 
@@ -14,133 +23,98 @@
 /plugin install engram@engram
 ```
 
-Puis : tu codes normalement → à la fin tu lances `/engram-save` → la mémoire revient toute seule à
-la session suivante (et après chaque auto-compact). [Démarrage rapide ↓](#installation-en-une-ligne)
+---
 
-Engram sauvegarde **tout le contexte d'une session Claude Code** — le code du projet, le déroulé de
-la session (ce qui a été fait + le chat), et les problèmes rencontrés avec leurs solutions — dans
-des fichiers Markdown compatibles **Obsidian**, puis les **recharge automatiquement** aux sessions
-suivantes. Aucune mémoire perdue entre les sessions, ni après un auto-compact.
+## Ce que ça fait
 
-Ce n'est **pas** un outil de démarrage : c'est un outil de **fin de session** + un **filet
-anti-compaction**. Tu codes normalement, et à la fin (ou quand le contexte sature) tu lances **une**
-commande.
+| Capacité | Comment |
+|---|---|
+| **Capture sans perte** | `/engram-save` + hooks (PreCompact, fin de session, **seuil de contexte ~70%**) |
+| **Rappel par pertinence** | hybride **BM25 + graphe `[[wikilinks]]` + embeddings** (Ollama, optionnel), scoré récence×importance×pertinence |
+| **Mémoire interrogeable en plein travail** | serveur **MCP** : `engram_recall`, `engram_lessons`, `engram_save_note` |
+| **Reprise immédiate** | `STATE.md` (« où on en est ») chargé en premier à chaque session |
+| **Apprentissage des erreurs** | `lessons.md` v2 (`[L-xxx]` : trigger/symptom/root_cause/fix/rule), dédup, compteurs helpful/harmful, bi-temporel |
+| **Anti-oubli structurel** | consolidation périodique (fusion, archivage non destructif) |
 
 ---
 
-## Installation
+## Architecture — mémoire à 2 étages
 
-Engram est un **plugin Claude Code**. Installe-le une fois → il marche sur **n'importe quel
-projet**, et écrit dans le `.engram/` du repo courant.
+Inspirée de l'état de l'art (Letta/MemGPT, Mem0, Zep/Graphiti, A-MEM, Reflexion, Voyager, Generative
+Agents, ACE — voir `docs/superpowers/specs/`).
 
-### Recommandé — depuis GitHub (une ligne)
+- **Étage 1 — état actif (toujours chargé, court)** : `STATE.md` + `MEMORY.md` + leçons prioritaires.
+- **Étage 2 — archive cherchable (à la demande)** : toutes les notes/leçons/sessions, indexées et
+  récupérées par **rappel scoré borné** (top-k, budget de tokens) — c'est ce qui évite le « context rot ».
 
-Dans une session Claude Code :
-
-```
-/plugin marketplace add JLmehdi92/engram
-/plugin install engram@engram
-```
-
-### Pré-requis
-
-**Node.js** disponible dans le PATH (les scripts déterministes sont en Node, **zéro dépendance
-npm**). Claude Code tourne déjà sur Node, donc c'est en général déjà le cas.
-
-### Développement / install locale
-
-Si tu as cloné le dépôt, le dossier cloné **est** une marketplace locale :
-
-```
-git clone https://github.com/JLmehdi92/engram
-/plugin marketplace add ./engram        # chemin vers le dossier cloné
-/plugin install engram@engram
-```
-
-Pour tester sans installer (recharge à chaud pendant le dev) :
-
-```
-claude --plugin-dir ./engram
-```
+Le **rappel** fusionne (RRF) trois signaux : mots-clés (BM25), graphe des `[[wikilinks]]`, et
+sémantique (embeddings Ollama si présents). Score final =
+`α·récence(0.995^Δj) + β·importance + γ·pertinence`, filtré par fenêtre de validité (bi-temporel).
 
 ---
 
-## Utilisation
+## Commandes
 
-| Commande | Quand | Ce que ça fait |
+| Commande | Quand | Effet |
 |---|---|---|
-| `/engram-save` | fin de session **ou** avant compaction | Scan exhaustif du projet + capture de la session + extraction des leçons → écrit/MAJ `.engram/` |
-| `/engram-save --precompact` | contexte saturé | Mode urgence : priorise session + leçons + index + MEMORY, puis le scan |
-| `/engram-save --full` | rare | Régénère toutes les notes (ignore l'incrémental) |
-| `/engram-load` | reprise / après compaction | Recharge MEMORY + lessons + dernières sessions et résume « où on en est » |
+| `/engram-save` | fin de session / avant compaction | scan exhaustif + capture session + MAJ notes, `STATE.md`, leçons v2, index. `--precompact`, `--full` |
+| `/engram-load [sujet]` | reprise / après compaction | recharge STATE + MEMORY + leçons + sessions, rappel ciblé optionnel, résume « où on en est » |
+| `/engram-consolidate` | périodiquement (gros projet) | fusionne doublons, archive le périmé, rafraîchit STATE, reconstruit l'index. `--apply` |
 
 Tu n'as **rien à lancer au début** : le rechargement est automatique (hook SessionStart).
 
----
+## Outils MCP (Claude les appelle en plein travail)
 
-## Automatismes (hooks)
+- `engram_recall(query)` — retrouve notes/leçons/sessions pertinentes.
+- `engram_lessons(situation)` — leçons pour un bug/erreur courant (**à consulter avant de débugger**).
+- `engram_save_note(title, content)` — ajoute une note durable.
 
-Activés dès que le plugin est activé :
+## Hooks automatiques
 
-- **SessionStart** — réinjecte la mémoire (MEMORY + `lessons.md` entier + 1-3 dernières sessions)
-  dans toute nouvelle session, **y compris après une compaction**. Respecte un **budget de tokens**
-  avec repli dégressif (réduit le nombre de sessions, puis bascule sur l'index seul si nécessaire ;
-  ne coupe jamais un fichier en plein milieu).
-- **PreCompact** — quand Claude va compacter le contexte, Engram **bloque une fois** la compaction
-  automatique et prévient : « contexte bientôt plein, lance `/engram-save` ». Au 2e déclenchement il
-  laisse passer (pas de blocage infini). Comportement réglable (voir config).
-- **SessionEnd** — rappelle de sauvegarder si la session se termine sans `/engram-save`.
-
-> Note technique : un hook ne peut pas exécuter Claude. Le hook PreCompact **avertit** (et tente de
-> bloquer) ; la sauvegarde intelligente est faite par `/engram-save`. Le blocage PreCompact est émis
-> de façon défensive (message + tentative de blocage) car son support peut varier selon la version
-> de Claude Code.
+- **SessionStart** — réinjecte STATE + MEMORY + leçons prioritaires + dernières sessions (budget de
+  tokens, dégradation propre). Inclut la reprise **après compaction**.
+- **Stop** — avertit dès que le contexte approche la saturation (~70%) → propose `/engram-save`.
+- **PreCompact** — bloque une fois la compaction et avertit (défensif).
+- **SessionEnd** — rappelle de sauvegarder si rien n'a été sauvé.
 
 ---
 
-## Ce qui est généré dans `.engram/`
+## Structure de `.engram/`
 
 ```
 .engram/
-├── MEMORY.md            # index court (< ~1500 tokens), rechargé à chaque session
-├── 00-overview.md       # projet, but, stack, build/run/test
-├── architecture.md      # structure, flux, points d'entrée, patterns
-├── module-*.md          # une note par module majeur (détaillée)
-├── data-and-apis.md     # endpoints, schémas DB, contrats, clés de storage
-├── decisions.md         # décisions d'architecture (style ADR)  ── durable
-├── lessons.md           # bugs/pannes résolus (Symptôme→Solution→Règle) ── durable
-├── glossary.md
-├── conventions.md       # style, commandes, workflow, préférences
-├── file-map.md          # 1 ligne par fichier source = PREUVE DE COUVERTURE
-├── sessions/
-│   ├── INDEX.md         # 1 ligne par session, plus récent en haut
-│   └── AAAA-MM-JJ-*.md  # log daté : résumé, décisions, problèmes, reprise
-├── .gitignore           # géré par Engram (ignore sessions/ par défaut)
-└── config.json          # (facultatif)
+├── STATE.md            # reprise (chargé en 1er)
+├── MEMORY.md           # index court
+├── 00-overview · architecture · module-* · data-and-apis · decisions · glossary · conventions · file-map
+├── lessons.md          # erreurs résolues [L-xxx] (durable, scoré)
+├── sessions/           # INDEX.md + AAAA-MM-JJ-*.md (non versionnés par défaut)
+├── archive/            # retirés (jamais supprimés)
+├── .index/             # bm25/graphe/embeddings (reconstructible, gitignoré)
+└── .state.json · config.json · .gitignore (gérés)
 ```
 
-Toutes les notes ont un frontmatter YAML (`title`, `type`, `updated`, `source_commit`) et des liens
-`[[wikilink]]` → ouvrir `.engram/` comme **vault Obsidian** donne une vue graphe cohérente.
+Frontmatter YAML + `[[wikilinks]]` → ouvrable comme **vault Obsidian**.
 
-### `decisions.md` vs `lessons.md` vs `sessions/`
-- `decisions.md` = décisions d'architecture + pourquoi (durable).
-- `lessons.md` = bugs/pannes résolus, **consulté avant de proposer une solution** (durable).
-- `sessions/` = logs datés de chaque session (par défaut **non versionnés**).
+---
+
+## Rappel sémantique (optionnel, 100% local)
+
+Sans rien installer, le rappel marche en **BM25 + graphe**. Si **[Ollama](https://ollama.com)** est
+présent (`ollama serve` + `ollama pull nomic-embed-text`), Engram **active automatiquement** la
+recherche sémantique (embeddings locaux) en plus — détecté tout seul, jamais requis, aucune donnée
+ne sort de la machine.
 
 ---
 
 ## Garanties de qualité
 
-- **Aucune troncature** : pas de `// reste identique`, pas de listes coupées. Un fichier trop gros
-  est **découpé**, pas tronqué.
-- **Couverture vérifiable** : tout fichier source apparaît dans `file-map.md` ; les manquants sont
-  signalés (`## ⚠️ Fichiers non couverts`).
-- **Daté + versionné** : `updated` + `source_commit` sur chaque note pour détecter le périmé.
-- **Incrémental & idempotent** : si `.engram/` existe, seul ce qui a changé (diff git) est mis à
-  jour ; relancer ne crée pas de doublons. Les fichiers **supprimés** sont purgés de `file-map.md`
-  et les modules disparus marqués `stale: true`.
-- **Sécurité** : les secrets (clés API, tokens, mots de passe, clés privées, URLs avec
-  credentials…) sont **masqués** dans la capture de session.
+- **Aucune perte** : capture aux moments clés + index reconstructible + archivage non destructif.
+- **Aucune troncature** des notes (découpe si trop gros) ; **budget de tokens** à l'injection.
+- **Couverture vérifiable** (`file-map.md`, manquants signalés).
+- **Écriture par delta** des leçons (jamais de réécriture globale → pas de « context collapse »).
+- **Bi-temporel** : un fait contredit n'est pas supprimé (`superseded_by`/`valid_to`).
+- **Secrets masqués** dans la capture de session.
+- **65 tests** (`npm test`), **zéro dépendance** npm.
 
 ---
 
@@ -154,45 +128,47 @@ Toutes les notes ont un frontmatter YAML (`title`, `type`, `updated`, `source_co
   "maxSessionsOnLoad": 3,
   "sessionStartTokenBudget": 12000,
   "gitignoreSessions": true,
-  "redactSecrets": true
+  "redactSecrets": true,
+  "recall": { "topK": 5, "minScore": 0, "budgetTokens": 4000, "maxLessonsOnStart": 8,
+              "weights": { "recency": 1, "importance": 1, "relevance": 3 } },
+  "embeddings": { "enabled": "auto", "host": "http://127.0.0.1:11434", "model": "nomic-embed-text" },
+  "capture": { "autoWarn": true, "contextWindow": 200000, "contextThresholdPct": 70 }
 }
 ```
-
-- `outputDir` — dossier de sortie (`.engram` ou `memory`…).
-- `precompactMode` — `block-once` (défaut, bloque 1× + avertit), `warn` (avertit sans bloquer),
-  `auto` (avertit sans bloquer, zéro friction).
-- `autoLoad` — rechargement auto au démarrage (défaut `true`).
-- `maxSessionsOnLoad` — nb de sessions rechargées (défaut 3).
-- `sessionStartTokenBudget` — plafond de tokens de l'injection SessionStart (défaut 12000).
-- `gitignoreSessions` — ignore `sessions/` dans git (défaut `true`, garde `INDEX.md`).
-- `redactSecrets` — masque les secrets dans la capture (défaut `true`).
-
----
-
-## Activer / désactiver
-
-- Désactiver temporairement les hooks : `/plugin` → désactive `engram`, ou `precompactMode: "warn"`.
-- Désactiver le rechargement auto : `autoLoad: false`.
-- Désinstaller : `/plugin uninstall engram@engram`.
+Tous les champs ont des défauts ; le fichier est facultatif.
 
 ---
 
 ## Tests
 
-Suite de tests des libs déterministes (redaction, gitignore, frontmatter, transcript, budget
-mémoire, chemins), **sans dépendance** (runner intégré de Node) :
-
 ```
 npm test          # ou : node --test
 ```
+65 tests, zéro dépendance (runner intégré de Node) : tokenizer/BM25, graphe, scoring/RRF, recall,
+embeddings (mock), leçons (parse + delta), protocole MCP, consolidation, hook seuil, redaction,
+budget mémoire, etc.
 
-27 tests, tous verts.
+---
+
+## Pré-requis & install locale
+
+Pré-requis : **Node.js** dans le PATH (Claude Code tourne déjà sur Node). Embeddings : **Ollama**
+optionnel.
+
+Dev / install locale (dépôt cloné = marketplace locale) :
+```
+git clone https://github.com/JLmehdi92/engram
+/plugin marketplace add ./engram
+/plugin install engram@engram
+# ou, sans installer : claude --plugin-dir ./engram
+```
+
+## Désinstaller
+`/plugin uninstall engram@engram`. Pour couper le sémantique : `embeddings.enabled: false`. Pour
+couper l'auto-load : `autoLoad: false`.
 
 ## Architecture interne
-
-L'**intelligence** (résumés, structuration, extraction des leçons) est faite par **Claude** via les
-slash-commands (qui lancent des sous-agents parallèles pour le scan). Les **scripts Node** ne font
-que du **déterministe** : énumération des fichiers (`enumerate-files.mjs`), contexte git
-(`git-context.mjs`), localisation + parsing du transcript `.jsonl` (`find-transcript.mjs`,
-`parse-transcript.mjs`), agrégation (`collect.mjs`), et les hooks. Voir `docs/superpowers/specs/`
-pour le design complet.
+L'**intelligence** (résumés, structuration, extraction de leçons, scan) est faite par **Claude** via
+les slash-commands (sous-agents parallèles). Les **scripts Node** ne font que du déterministe
+(énumération, git, transcript, **index/rappel BM25+graphe**, embeddings, hooks, serveur MCP). Détails :
+`docs/superpowers/specs/2026-06-14-engram-v2-design.md`.
