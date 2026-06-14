@@ -57,3 +57,10 @@ test('recall: respecte topK', () => {
   const res = recall(items, 'precompact compaction memoire', { nowMs: now, topK: 1 });
   assert.equal(res.length, 1);
 });
+
+test('recall: les rangs sémantiques injectés font remonter un item sans mot-clé', () => {
+  // "cuisine" n'a aucun mot-clé de la requête, mais le sémantique le place 1er.
+  const semantic = [{ id: 'note:cuisine', score: 0.9 }, { id: 'note:arch', score: 0.2 }];
+  const res = recall(items, 'precompact compaction', { nowMs: now, topK: 5, semantic });
+  assert.ok(res.map((r) => r.id).includes('note:cuisine'));
+});
