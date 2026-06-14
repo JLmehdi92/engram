@@ -5,7 +5,7 @@
   "mcpServers": "./.mcp.json",
   "author": { "name": "JLmehdi92", "url": "https://github.com/JLmehdi92" },
   "homepage": "https://github.com/JLmehdi92/engram",
-  "repository": { "type": "git", "url": "https://github.com/JLmehdi92/engram.git" },
+  "repository": "https://github.com/JLmehdi92/engram.git",
   "license": "MIT",
   "commands": "./commands",
   "skills": "./skills",
